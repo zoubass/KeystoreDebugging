@@ -5,7 +5,7 @@ Tested and reproduced on following devices:
 * OnePlus 13R
 * OnePlus 15
 * Xiaomi 14T
-* Motorola Edge Fusion 60
+* Motorola Edge Fusion 60 ?
 
 
 Assumption: 
