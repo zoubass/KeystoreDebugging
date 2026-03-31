@@ -8,11 +8,9 @@ import android.util.Log
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.security.KeyPairGenerator
 
-@ExperimentalCoroutinesApi
 object KeyStoreUtils {
 
     private const val EC_KEY_SIZE_BITS: Int = 256
-    private const val AUTHENTICATION_TIMEOUT_OLDER_THEN_R = -1
     private const val AUTHENTICATION_TIMEOUT_R_AND_LATER = 0
     const val ANDROID_KEYSTORE = "AndroidKeyStore"
 
@@ -28,7 +26,7 @@ object KeyStoreUtils {
     fun generateEcKeyStore(
         keyAlias: String,
         authenticationRequired: Boolean,
-        authenticationTimeoutSeconds: Int = getDefaultAuthenticationTimeout(),
+        authenticationTimeoutSeconds: Int = AUTHENTICATION_TIMEOUT_R_AND_LATER,
         signatureDigest: String = KeyProperties.DIGEST_SHA256,
         attestationChallenge: ByteArray? = null
     ) {
@@ -44,14 +42,6 @@ object KeyStoreUtils {
         )
 
         Log.i("KeyStoreUtils", "EC key generated with alias: $keyAlias")
-    }
-
-    fun getDefaultAuthenticationTimeout(): Int {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            AUTHENTICATION_TIMEOUT_R_AND_LATER
-        } else {
-            AUTHENTICATION_TIMEOUT_OLDER_THEN_R
-        }
     }
 
     private fun generateKeystore(

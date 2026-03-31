@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "MotorolaKeystore"
+rootProject.name = "KeystoreDebugging"
 include(":app")
  
