@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,23 +21,55 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
+import com.test.bug.MainViewModel.DataSize
 import com.test.bug.ProjectApp.Companion.PER_OP_KEY_ALIAS
 import com.test.bug.ProjectApp.Companion.TIME_BASED_KEY_ALIAS
-import com.test.bug.ui.theme.MotorolaKeystoreTheme
+import com.test.bug.ui.theme.KeystoreDebuggingTheme
 
 class MainActivity : FragmentActivity() {
+
+    private val viewModel: MainViewModel by viewModels()
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MotorolaKeystoreTheme {
+
+            val showPerOpDialog by viewModel.showDialog
+
+            KeystoreDebuggingTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+
                     ActionButtons(
                         activity = this,
                         modifier = Modifier
                             .padding(innerPadding)
-                            .fillMaxSize()
+                            .fillMaxSize(),
+                        viewModel = viewModel
                     )
+
+                    if (showPerOpDialog) {
+                        val signature = getSignature(PER_OP_KEY_ALIAS)
+
+                        BiometricPromptDialog(
+                            context = this,
+                            cryptoObject = BiometricPrompt.CryptoObject(signature),
+                            title = "Per Operation Authentication",
+                            description = "Sign",
+                            onAuthenticated = {
+                                viewModel.signPerOp(it)
+                            },
+                            onFailedAuthentication = {
+                                viewModel.onFailed()
+                                Toast.makeText(
+                                    this,
+                                    "PerOp - Authentication failed $it",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -44,10 +77,10 @@ class MainActivity : FragmentActivity() {
 }
 
 @Composable
-fun ActionButtons(modifier: Modifier = Modifier, activity: MainActivity) {
-    var statusText by remember { mutableStateOf("") }
-    var showPerOpDialog by remember { mutableStateOf(false) }
+fun ActionButtons(modifier: Modifier = Modifier, activity: MainActivity, viewModel: MainViewModel) {
+    var statusText by viewModel.statusText
     var showTimeBasedDialog by remember { mutableStateOf(false) }
+    var size by remember { mutableStateOf(DataSize.DATA_256) }
 
     Column(
         modifier = modifier.padding(24.dp),
@@ -55,52 +88,41 @@ fun ActionButtons(modifier: Modifier = Modifier, activity: MainActivity) {
     ) {
         Text("Choose an action")
         Button(onClick = {
-            showPerOpDialog = true
+            viewModel.onButtonClick(DataSize.DATA_256, PER_OP_KEY_ALIAS)
         }) {
-            Text("Per-Op")
+            Text("Per-Op auth (256 bytes)")
         }
-        Button(onClick = { showTimeBasedDialog = true }) {
-            Text(text = "Time Based")
+        Button(onClick = {
+            viewModel.onButtonClick(DataSize.DATA_257, PER_OP_KEY_ALIAS)
+        }) {
+            Text("Per-Op auth (257 bytes)")
+        }
+        Button(onClick = {
+            showTimeBasedDialog = true
+            size = DataSize.DATA_256
+        }) {
+            Text(text = "Time Based auth (256 bytes)")
+        }
+        Button(onClick = {
+            showTimeBasedDialog = true
+            size = DataSize.DATA_257
+        }) {
+            Text(text = "Time Based auth (257 bytes)")
         }
         Text(statusText)
     }
 
-    if (showPerOpDialog) {
-        showTimeBasedDialog = false
-        statusText = ""
-        val signature = getSignature(PER_OP_KEY_ALIAS)
 
-        BiometricPromptDialog(
-            context = activity,
-            cryptoObject = BiometricPrompt.CryptoObject(signature),
-            title = "Per Operation Authentication",
-            description = "Sign",
-            onAuthenticated = {
-                signPerOp(it, activity, { statusText = it })
-                showPerOpDialog = false
-            },
-            onFailedAuthentication = {
-                showPerOpDialog = false
-                Toast.makeText(
-                    activity,
-                    "PerOp - Authentication failed $it",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-        )
-    }
 
     if (showTimeBasedDialog) {
-        showPerOpDialog = false
         statusText = ""
         BiometricPromptDialog(
             context = activity,
-            cryptoObject = null,
             title = "Time Based Authentication",
             description = "Sign",
             onAuthenticated = {
                 showTimeBasedDialog = false
-                signTimeBased(activity, { statusText = it })
+                viewModel.signTimeBased(size)
             },
             onFailedAuthentication = {
                 showTimeBasedDialog = false
@@ -111,46 +133,5 @@ fun ActionButtons(modifier: Modifier = Modifier, activity: MainActivity) {
                 ).show()
             }
         )
-    }
-}
-
-private fun signPerOp(
-    result1: BiometricPrompt.AuthenticationResult,
-    activity: MainActivity,
-    statusText: (exception: String) -> Unit
-) {
-    try {
-        val result = sign(result1.cryptoObject!!.signature!!, "SecretData".toByteArray())
-        Toast.makeText(
-            activity,
-            "PerOp - Signed data: ${result?.size} bytes.",
-            Toast.LENGTH_LONG
-        ).show()
-    } catch (e: Exception) {
-        Toast.makeText(
-            activity,
-            "PerOp - Signing failed: ${e.message}",
-            Toast.LENGTH_LONG
-        ).show()
-        statusText(e.message ?: "Unknown error")
-    }
-}
-
-
-private fun signTimeBased(activity: FragmentActivity, statusText: (exception: String) -> Unit) {
-    try {
-        val result = sign(TIME_BASED_KEY_ALIAS, "SecretData".toByteArray())
-        Toast.makeText(
-            activity,
-            "PerOp - Signed data: ${result?.size} bytes.",
-            Toast.LENGTH_LONG
-        ).show()
-    } catch (e: Exception) {
-        Toast.makeText(
-            activity,
-            "TimeBased - Signing failed: ${e.message}",
-            Toast.LENGTH_LONG
-        ).show()
-        statusText(e.message ?: "Unknown error")
     }
 }

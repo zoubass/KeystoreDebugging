@@ -1,29 +1,41 @@
 package com.test.bug
 
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.security.KeyStore
 import java.security.PrivateKey
 import java.security.Signature
 
+
 fun sign(keyAlias: String, data: ByteArray?): ByteArray? {
-    return try {
-        val signature = getSignature(keyAlias)
-        sign(signature, data)
-    } catch (e: Exception) {
-        Log.e("Crypto", "Signing failed", e)
-        throw e
+    CoroutineScope(Dispatchers.IO).launch {
+        try {
+            val signature = getSignature(keyAlias)
+            sign(signature, data)
+            Log.i("Crypto", "Signed - timebased")
+        } catch (e: Exception) {
+            Log.e("Crypto", "Signing failed", e)
+            throw e
+        }
     }
+    return null
+
 }
 
 fun sign(
     signature: Signature,
     data: ByteArray?,
 ): ByteArray? {
-    return try {
+    try {
         signature.update(data)
-        signature.sign()
+        return signature.sign()
     } catch (e: Exception) {
-        Log.e("Crypto", "Signing failed", e)
+        Log.e("TEST", "Signing failed", e)
         throw e
     }
 }
