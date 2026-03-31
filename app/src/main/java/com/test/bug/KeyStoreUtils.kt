@@ -27,8 +27,7 @@ object KeyStoreUtils {
         keyAlias: String,
         authenticationRequired: Boolean,
         authenticationTimeoutSeconds: Int = AUTHENTICATION_TIMEOUT_R_AND_LATER,
-        signatureDigest: String = KeyProperties.DIGEST_SHA256,
-        attestationChallenge: ByteArray? = null
+        signatureDigest: String = KeyProperties.DIGEST_SHA256
     ) {
         generateKeystore(
             KeyProperties.KEY_ALGORITHM_EC,
@@ -37,8 +36,7 @@ object KeyStoreUtils {
             keyAlias,
             authenticationRequired,
             authenticationTimeoutSeconds,
-            signatureDigest,
-            attestationChallenge = attestationChallenge
+            signatureDigest
         )
 
         Log.i("KeyStoreUtils", "EC key generated with alias: $keyAlias")
@@ -51,8 +49,7 @@ object KeyStoreUtils {
         keyAlias: String,
         authenticationRequired: Boolean,
         authenticationTimeoutSeconds: Int,
-        signatureDigest: String? = KeyProperties.DIGEST_SHA256,
-        attestationChallenge: ByteArray? = null
+        signatureDigest: String? = KeyProperties.DIGEST_SHA256
     ) {
         val projectInstance = ProjectApp.instance
 
@@ -68,10 +65,6 @@ object KeyStoreUtils {
             .setUserAuthenticationValidity(authenticationTimeoutSeconds)
             .setDigests(signatureDigest, KeyProperties.DIGEST_NONE)
             .setKeySize(keySize)
-
-        if (attestationChallenge != null) {
-            keyBuilder.setAttestationChallenge(attestationChallenge)
-        }
 
         if (projectInstance.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)) {
             keyBuilder.setIsStrongBoxBacked(USE_STRONGBOX_IF_AVAILABLE)
