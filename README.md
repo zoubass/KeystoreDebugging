@@ -24,4 +24,4 @@ Assumption:
    round-trip to the secure element re-validates the authentication token — and the per-op auth
    token is consumed/invalidated after the first use, causing subsequent internal rounds to fail
    with                
-   KeyUserNotAuthenticated (-26).    asd            
+   KeyUserNotAuthenticated (-26).     
